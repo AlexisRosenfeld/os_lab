@@ -2,6 +2,14 @@ package os.chat.server;
 
 import java.util.Vector;
 
+
+//class used by the rmi
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+
+
 /**
  * This class manages the available {@link ChatServer}s and available rooms.
  * <p>
@@ -22,6 +30,10 @@ public class ChatServerManager implements ChatServerManagerInterface {
 	private Vector<ChatServer> chatRooms;
 
     private static ChatServerManager instance = null;
+    
+    
+    //define the Regitry variable used in the entry pitn 
+    private Registry registry;
 	
 	/**
 	 * Constructor of the <code>ChatServerManager</code>.
@@ -31,6 +43,12 @@ public class ChatServerManager implements ChatServerManagerInterface {
 	 */
 	public ChatServerManager () {
 		
+		
+		//DOne , create create variable on the constructors
+		//instancie les variables dans le  constructeur
+		chatRooms = new Vector<ChatServer>();
+		chatRoomsList = new Vector<String>();
+		
 		// initial: we create a single chat room and the corresponding ChatServer
 		chatRooms.add(new ChatServer("sports"));
 		chatRoomsList.add("sports");
@@ -39,6 +57,22 @@ public class ChatServerManager implements ChatServerManagerInterface {
 		 * TODO register the server manager object as a "ChatServerManager" on the RMI registry
 		 * so it can be called by clients.
 		 */
+		
+		//DONE !
+		
+		
+	    try {
+	        ChatServerManagerInterface stub = (ChatServerManagerInterface) UnicastRemoteObject.exportObject(this, 0);
+	        registry = LocateRegistry.getRegistry();
+	        registry.rebind("ChatServerManager", stub);
+	        //Je dois changer la clase de mon contract pour mettre "Extend remote" pour que ça fonctionne
+	    } catch (RemoteException e) {
+	        System.out.println("can not export the object");
+	        e.printStackTrace();
+	    }
+	    System.out.println("ChatServerManager was created");
+
+
 		
 	}
 
@@ -71,13 +105,37 @@ public class ChatServerManager implements ChatServerManagerInterface {
 	 */
 	public boolean createRoom(String roomName) {
 		
-		System.err.println("server manager method createRoom not implemented.");
+	
 		
 		/*
 		 * TODO add the code to create a new room
 		 */
 		
-		return false;
+		//done , /System.err.println("server manager method createRoom not implemented.");
+		try {
+			chatRoomsList.add(roomName);
+		} catch (Exception e) {
+			return false; /* Should catch all exceptions... */
+		}
+		return true;
+		
+	
 	}	
+	
+	// I create an entry point for my server
+	public static void main(String[] args) {
+		/* François à ajouter cette partie pour créer le registry */
+		try {
+			LocateRegistry.createRegistry(1099);
+			/* port 1099 is the default port for RMI */
+			
+		} catch (RemoteException e) {
+			System.out.println("error_can_not_create_registry");
+			e.printStackTrace(); return;
+		}
+		System.out.println("registry_was_created");
+		getInstance();
+		/* François à ajouter cette partie pour créer le ChatServerManager */
+	}
 	
 }

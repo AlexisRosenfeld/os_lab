@@ -3,14 +3,21 @@ package os.chat.client;
 
 import os.chat.server.ChatServerManagerInterface;
 
+//pour la Q2
+import os.chat.server.ChatServerInterface;
 
 import java.util.Vector;
 
+//pour mon implémentaiotn 
+import java.util.HashMap;
+
 //poru faire foncitonnre ChatSErverManager
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 
 
@@ -20,6 +27,7 @@ import java.rmi.registry.Registry;
  */
 public class ChatClient implements CommandsFromWindow,CommandsFromServer {
 	
+	private CommandsFromServer stub;
 	//les variable utiliser dans le construceur CahtClient , poiur mettre ChatServerMnagerINterfac,e je doit pas oublier d'import
 	ChatServerManagerInterface csm;
 	Registry registry;
@@ -27,6 +35,12 @@ public class ChatClient implements CommandsFromWindow,CommandsFromServer {
 	 * The name of the user of this client
 	 */
 	private String userName;
+	
+
+	
+	
+	//pour la Q2, c'set mieu de faire uen HashMap
+	private HashMap<String, ChatServerInterface> myRooms = new HashMap<>();
 	
   /**
    * The graphical user interface, accessed through its interface. In return,
@@ -52,6 +66,9 @@ public class ChatClient implements CommandsFromWindow,CommandsFromServer {
 		 * TODO implement constructor
 		 */
 		try {
+
+			stub = (CommandsFromServer) UnicastRemoteObject.exportObject(this, 0);
+
 			registry = LocateRegistry.getRegistry();
 			/* recuperation du registre */
 			csm = (ChatServerManagerInterface)registry.lookup("ChatServerManager"); 
@@ -81,11 +98,23 @@ public class ChatClient implements CommandsFromWindow,CommandsFromServer {
 	 */
 	public void sendText(String roomName, String message) {
 
-		System.err.println("TODO: sendText is not implemented.");
+		
 
 		/*
 		 * TODO implement the method to send the message to the server.
 		 */
+	    try {
+	        ChatServerInterface roomStub = myRooms.get(roomName);
+	        if (roomStub != null) {
+	            roomStub.publish(message, userName);
+	        }
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	    }
+
+		
+		
+		//Done , 	System.err.println("TODO: sendText is not implemented.");
 	}
 
 	/**
@@ -123,13 +152,26 @@ public class ChatClient implements CommandsFromWindow,CommandsFromServer {
 	 */
 	public boolean joinChatRoom(String roomName) {
 		
-		System.err.println("TODO: joinChatRoom is not implemented.");
+		
 
 		/*
 		 * TODO implement the method to join a chat room and receive notifications of new messages.
-		 */		
+		 */	
 		
-		return false;		
+	    try {
+	        ChatServerInterface roomStub = (ChatServerInterface) registry.lookup("room_" + roomName);
+        	roomStub.register(stub); 
+	        myRooms.put(roomName, roomStub);
+	        return true;
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return false;
+	    }
+
+		
+		//return false;	
+		
+		//Done System.err.println("TODO: joinChatRoom is not implemented.");
 	}
 
 	/**
@@ -142,13 +184,26 @@ public class ChatClient implements CommandsFromWindow,CommandsFromServer {
 	 */	
 	public boolean leaveChatRoom(String roomName) {
 		
-		System.err.println("TODO: leaveChatRoom is not implemented.");
 
 		/*
 		 * TODO implement the method to leave a chat room and stop receiving notifications of new messages.
 		 */		
 		
-		return false;
+		
+	    try {
+	        if (myRooms.containsKey(roomName)) {
+	        	//ja'i du cat this to remor ( à propos de UnicastRemote object ), j'ai du import UnicastRemoteObjetct de rmi 
+            	myRooms.get(roomName).unregister(stub); // Utilisez le stub exporté
+	            myRooms.remove(roomName);
+	            return true;
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	    return false;
+
+		//Done , 		System.err.println("TODO: leaveChatRoom is not implemented.");
+
 	}
 
     /**
@@ -187,10 +242,12 @@ public class ChatClient implements CommandsFromWindow,CommandsFromServer {
 	 */
 	public void receiveMsg(String roomName, String message) {
 		
-		System.err.println("TODO: getName is not implemented.");
 		/*
 		 * TODO implement the method to allow server to publish message for client.
 		 */
+	    window.publish(roomName, message);
+	    //Done , 		System.err.println("TODO: getName is not implemented.");
+
 	}
 		
 	// This class does not contain a main method. You should launch the whole program by launching ChatClientWindow's main method.
